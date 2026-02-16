@@ -8,7 +8,7 @@ This project aims to provide a cross-platform GUI that allows users to download 
 
 ## Preview
 
-![App Screenshot](./img/screenshot.png)
+![App Screenshot](./preview.png)
 
 > Replace the image path with your actual screenshot file.
 
