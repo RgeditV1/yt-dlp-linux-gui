@@ -3,7 +3,7 @@ import webbrowser
 from pathlib import Path
 from PIL import Image, ImageDraw
 from functools import wraps
-
+import downloader
 
 imgPTH = Path.cwd() / "img" / "yt_logo.png"
 font = Path.cwd() / 'fonts' / 'Super Wonder.ttf'
@@ -20,6 +20,7 @@ class Ui():
         ctk.FontManager.load_font(str(font))
         self.header()
         self.content()
+        self.dl = downloader.Downloader()
     
     def header(self):
         img = Image.open(imgPTH)
@@ -45,9 +46,9 @@ class Ui():
         url_label = ctk.CTkLabel(self.url_frame, text='URL DE YOUTUBE', font=('Super Wonder', 20))
         url_label.pack(pady=(0,0), padx=(0,5), anchor='w')
 
-        url_entry = ctk.CTkEntry(self.url_frame, width=300, height=30,
+        self.url_entry = ctk.CTkEntry(self.url_frame, width=300, height=30,
                                  placeholder_text='https://www.youtube.com/watch?v=')
-        url_entry.pack(padx=(0,5))
+        self.url_entry.pack(padx=(0,5))
 
     def formato(self):
         #------------------------
@@ -154,8 +155,11 @@ class Ui():
                                          size=(25,25))
         self.descargar_btn = ctk.CTkButton(self.content_frame, image=self.download_ico, height=35,
                                            text='Iniciar Descarga', fg_color='transparent', border_width=1,
-                                           border_color='green', hover_color='gray')
+                                           border_color='green', hover_color='gray',command=self.descargar_pressed)
         self.descargar_btn.pack()
         
         self.show_profile()
+
+    def descargar_pressed(self):
+        self.dl.download_url(self.url_entry.get())
 
