@@ -19,8 +19,6 @@ class Downloader:
         self.set_file_format(DEFAULT_FORMAT)
         self.logger.debug("Downloader initialized")
 
-
-
     
     def set_dl_path(self, entry_path):
         if entry_path =="":
@@ -58,7 +56,11 @@ class Downloader:
 
     def download_url(self, url):
         with  yt_dlp.YoutubeDL(self.options) as dl:
-            errorcode = dl.download(url)  
+            try:
+                errorcode = dl.download(url)
+            except yt_dlp.utils.DownloadError as e:
+                return e.msg
             self.logger.debug("Download failed" if errorcode else "Download successful")
+        return ""
     
 

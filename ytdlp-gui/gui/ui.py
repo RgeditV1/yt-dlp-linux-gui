@@ -22,7 +22,7 @@ class Ui():
         ctk.FontManager.load_font(str(path['font_path']))
         self.header()
         self.content()
-        self.dl = Downloader()
+        self.dl = Downloader(path['current_path'])
     
     def header(self):
         img = Image.open(path['logo_path'])
@@ -73,14 +73,14 @@ class Ui():
                                      text='Audio\nMP3', width=120,fg_color='transparent',
                                      border_width=1, border_spacing=0,
                                      border_color='blue', hover_color='gray',
-                                     command=lambda:[self.mp3_pressed, self.set_button_status(self.mp3_btn)])
+                                     command=lambda:[self.mp3_pressed(), self.set_button_status(self.mp3_btn)])
         self.mp3_btn.pack(side='left', padx=(5,5))
 
         self.mp4_btn = ctk.CTkButton(self.format_frame, image=self.mp4_ico,
                                      text='Video\nMP4', fg_color="transparent",
                                      width=120,border_spacing=0, border_width=1,
                                      border_color='red', hover_color='gray',
-                                     command=lambda:[self.mp4_pressed, self.set_button_status(self.mp4_btn)])
+                                     command=lambda:[self.mp4_pressed(), self.set_button_status(self.mp4_btn)])
         self.mp4_btn.pack(padx=(5,5))
     
 
@@ -175,7 +175,20 @@ class Ui():
         pressed.configure(fg_color="#1f6aa5")
 
     def download_pressed(self):
-        self.dl.download_url(self.url_entry.get())
+        url = self.url_entry.get()
+        if len(url) ==0:
+            print("invalid url")
+            
+            self.url_entry.configure(require_redraw=True, border_color="red")
+
+        else:
+            self.url_entry.configure(require_redraw=True, border_color="grey")
+            
+            error_msg = self.dl.download_url(url)
+            if error_msg != "":
+                self.url_entry.configure(require_redraw=True, border_color="red")
+
+
 
     def mp4_pressed(self):
         self.dl.set_file_format("mp4")
