@@ -5,27 +5,47 @@ from PIL import Image, ImageDraw
 from functools import wraps
 from core.downloader import Downloader
 
-#All Paths come frome here
-path = {
-    'current_path':Path.cwd(),
-    'logo_path':Path.cwd() / "img" / "yt_logo.png",
-    'font_path':Path.cwd() / 'fonts' / 'Super Wonder.ttf',
-    'mp3_icon_path':Path.cwd() / 'img' / 'mp3_icon.png',
-    'mp4_icon_path':Path.cwd() / 'img' / 'mp4_icon.png',
-    'download_icon_path':Path.cwd() / 'img' / 'download.png',
-    'my_icon_path':Path.cwd() / 'img'/ 'profile.jpg'
-}
 
-class Ui():
+
+class Ui:
     def __init__(self, main_frame):
         self.main_frame = main_frame
-        ctk.FontManager.load_font(str(path['font_path']))
+        my_downloads = Path.home().joinpath('Downloads').resolve()
+        self._paths = {
+            "download_dir": Path(my_downloads).joinpath("yt-dlp-downloads"),
+            "entry_path": Path(),
+            "logo": Path.cwd().joinpath("img","yt_logo.png"),
+            "font": Path.cwd().joinpath("fonts","Super Wonder.ttf"),
+            "mp3_icon": Path.cwd().joinpath("img","mp3_icon.png"),
+            "mp4_icon": Path.cwd().joinpath("img","mp4_icon.png"),
+            "download_icon": Path.cwd().joinpath("img","download.png"),
+            "my_icon": Path.cwd().joinpath("img","profile.jpg"),
+        }
+
+        if not self._paths["download_dir"].exists():
+            self._paths["download_dir"].mkdir(parents=True, exist_ok=True)
+
+        ctk.FontManager.load_font(str(self._paths["font"]))
+
+        self.dl = Downloader()
+
         self.header()
         self.content()
-        self.dl = Downloader()
-    
+
+        self.set_button_status(self.mp4_btn)
+
+
+    def get_path_list(self, key):
+        if key:
+            return self._paths.get(key)
+        return self._paths
+
+    def set_path(self, key, value):
+        self._paths[key] = value
+
+                
     def header(self):
-        img = Image.open(path['logo_path'])
+        img = Image.open(str(self.get_path_list('logo')))
         self.logo = ctk.CTkImage(light_image=img,
                             dark_image=img, size=(40,30))
         
@@ -56,10 +76,10 @@ class Ui():
         #------------------------
         # FORMAT
         #-----------------------
-        mp3ico = Image.open(path['mp3_icon_path'])
+        mp3ico = Image.open(str(self.get_path_list('mp3_icon')))
         self.mp3_ico = ctk.CTkImage(light_image=mp3ico,
                                     dark_image=mp3ico, size=(25,25))
-        mp4ico = Image.open(path['mp4_icon_path'])
+        mp4ico = Image.open(str(self.get_path_list('mp4_icon')))
         self.mp4_ico = ctk.CTkImage(light_image=mp4ico,
                                     dark_image=mp4ico, size=(25,25))
         
@@ -73,14 +93,14 @@ class Ui():
                                      text='Audio\nMP3', width=120,fg_color='transparent',
                                      border_width=1, border_spacing=0,
                                      border_color='blue', hover_color='gray',
-                                     command=lambda:[self.mp3_pressed, self.set_button_status(self.mp3_btn)])
+                                     command=lambda:[self.mp3_pressed(), self.set_button_status(self.mp3_btn)])
         self.mp3_btn.pack(side='left', padx=(5,5))
 
         self.mp4_btn = ctk.CTkButton(self.format_frame, image=self.mp4_ico,
                                      text='Video\nMP4', fg_color="transparent",
                                      width=120,border_spacing=0, border_width=1,
                                      border_color='red', hover_color='gray',
-                                     command=lambda:[self.mp4_pressed, self.set_button_status(self.mp4_btn)])
+                                     command=lambda:[self.mp4_pressed(), self.set_button_status(self.mp4_btn)])
         self.mp4_btn.pack(padx=(5,5))
     
 
@@ -89,7 +109,7 @@ class Ui():
         @wraps(func)
         def wrapper(self):
             size = (50, 50)
-            img = Image.open(path['my_icon_path']).resize(size).convert("RGBA")
+            img = Image.open(str(self.get_path_list('my_icon'))).resize(size).convert("RGBA")
             mask = Image.new("L", size, 0)
             draw = ImageDraw.Draw(mask)
             draw.ellipse((0, 0, size[0], size[1]), fill=255)
@@ -131,7 +151,7 @@ class Ui():
     def save_file(self):
 
         #Use it for update Label Path
-        self.show_path = ctk.StringVar(value=str(path['current_path']))
+        self.show_path = ctk.StringVar(value=str(self.get_path_list('download_dir')))
         
         self.save_frame = ctk.CTkFrame(self.content_frame, fg_color='transparent')
         self.save_frame.pack(fill='y', pady=(15,15))
@@ -154,28 +174,61 @@ class Ui():
         self.format()
         self.save_file()
 
-        download = Image.open(path['download_icon_path'])
+        download = Image.open(str(self.get_path_list('download_icon')))
         self.download_ico = ctk.CTkImage(light_image=download,
                                          dark_image=download,
                                          size=(25,25))
         
         self.descargar_btn = ctk.CTkButton(self.content_frame, image=self.download_ico, height=35,
                                            text='Iniciar Descarga', fg_color='transparent', border_width=1,
-                                           border_color='green', hover_color='gray',command=self.download_pressed)
+                                           border_color='green', hover_color='gray',command=self.download_pressed) # type: ignore
         self.descargar_btn.pack()
         
-        self.show_profile()
+        self.show_profile() # type: ignore
 
     def set_button_status(self, pressed):
         #set buttons fg default
         self.mp3_btn.configure(fg_color="transparent")
         self.mp4_btn.configure(fg_color="transparent")
 
-        #if you find another beauty color, chage it
+        #if you find another beauty color, change it
         pressed.configure(fg_color="#1f6aa5")
 
-    def download_pressed(self):
-        self.dl.download_url(self.url_entry.get())
+
+    @staticmethod
+    def validate_fields(func):
+        @wraps(func)
+        def wrapper(self,*args):
+            url = self.url_entry.get()
+            self.set_path('entry_path', self.entry_path.get())
+            valid = True
+            if Path(self.get_path_list('entry_path')).exists():
+                self.entry_path.configure(require_redraw=True, border_color="green")
+                self.dl.set_dl_path(self.get_path_list('entry_path'))
+            else:
+                self.entry_path.configure(require_redraw=True, border_color="red")
+                valid = False
+
+            if len(url) ==0:
+                # Makes the border red if the url is incorrect
+                # Feel free to change it
+                self.url_entry.configure(require_redraw=True, border_color="red")
+                valid = False
+            else:
+                self.url_entry.configure(require_redraw=True, border_color="green")
+
+            if not valid:
+                return
+            return func(self,url)
+        return wrapper
+
+
+    @validate_fields
+    def download_pressed(self,url):
+        
+        if self.dl.download_url(url) != "":
+            self.url_entry.configure(require_redraw=True, border_color="red")
+        
 
     def mp4_pressed(self):
         self.dl.set_file_format("mp4")
@@ -185,8 +238,23 @@ class Ui():
 
     def save_pressed(self):
         select = ctk.filedialog.Directory(title="Choose download location")
-        dl_dir = select.show()
-        path['current_path'] = dl_dir
-        self.entry_path.delete(0, 'end')
-        self.entry_path.insert(0, path['current_path'])
-        self.dl.set_dl_path(self.entry_path.get())
+        chosen = select.show()
+
+        if isinstance(chosen, tuple): 
+            chosen = chosen[0] if chosen else ""
+
+        # update entry_path
+        if chosen != "" and Path(chosen).exists():
+            self.set_path("entry_path", Path(chosen))
+        else:
+            self.set_path("entry_path", self.get_path_list("download_dir"))
+
+        final_path = str(self.get_path_list("entry_path"))
+
+        self.entry_path.delete(0, "end")
+        self.entry_path.insert(0, final_path)
+        self.dl.set_dl_path(final_path)
+
+
+
+

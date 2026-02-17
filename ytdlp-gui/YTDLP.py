@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from pathlib import Path
 from gui.ui import Ui
 
 class YTDLP(ctk.CTk):

@@ -1,12 +1,12 @@
 import yt_dlp
-from pathlib import Path
 import logging
+from pathlib import Path
 
 
 DEFAULT_FORMAT = "mp4"
-DEFAULT_DOWNLOAD_DIR = "downloads"
 LOG_LEVEL = logging.DEBUG
 
+my_downloads = Path.home().joinpath('Downloads').resolve()
 
 class Downloader:
     def __init__(self):
@@ -15,20 +15,15 @@ class Downloader:
         logging.basicConfig(level=LOG_LEVEL)
         self.logger = logging.getLogger(__name__)
 
-        self.options["paths"] = {"home": str(Path.cwd() / DEFAULT_DOWNLOAD_DIR)}
+        self.options["paths"] = {"downloads": str(Path(my_downloads).joinpath("yt-dlp-downloads"))}
+        print(self.options['paths'])
         self.set_file_format(DEFAULT_FORMAT)
         self.logger.debug("Downloader initialized")
 
-
-
     
     def set_dl_path(self, entry_path):
-        if entry_path =="":
-            entry_path = Path.cwd() / DEFAULT_DOWNLOAD_DIR
-            self.options["paths"]["home"] = str(entry_path)
-            self.logger.debug("New path set: %s", str(entry_path))
-        else:    
-            self.options["paths"]["home"] = str(entry_path)
+        if str(entry_path) != self.options["paths"]["downloads"]:
+            self.options["paths"]["downloads"] = str(entry_path)
             self.logger.debug("New path set: %s", str(entry_path))
 
 
@@ -57,8 +52,12 @@ class Downloader:
 
 
     def download_url(self, url):
-        with  yt_dlp.YoutubeDL(self.options) as dl:
-            errorcode = dl.download(url)  
+        with  yt_dlp.YoutubeDL(self.options) as dl: # type: ignore
+            try:
+                errorcode = dl.download(url)
+            except yt_dlp.utils.DownloadError as e: # type: ignore
+                return e.msg
             self.logger.debug("Download failed" if errorcode else "Download successful")
+        return ""
     
 
