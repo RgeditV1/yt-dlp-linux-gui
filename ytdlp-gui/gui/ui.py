@@ -3,27 +3,29 @@ import webbrowser
 from pathlib import Path
 from PIL import Image, ImageDraw
 from functools import wraps
-import downloader
+from core.downloader import Downloader
 
-imgPTH = Path.cwd() / "img" / "yt_logo.png"
-font = Path.cwd() / 'fonts' / 'Super Wonder.ttf'
-mp3_icon = Path.cwd() / 'img' / 'mp3_icon.png'
-mp4_icon = Path.cwd() / 'img' / 'mp4_icon.png'
-download_icon = Path.cwd() / 'img' / 'download.png'
-my_icon = Path.cwd() / 'img'/ 'profile.jpg'
-ruta = Path.cwd()
-
+#All Paths come frome here
+path = {
+    'current_path':Path.cwd(),
+    'logo_path':Path.cwd() / "img" / "yt_logo.png",
+    'font_path':Path.cwd() / 'fonts' / 'Super Wonder.ttf',
+    'mp3_icon_path':Path.cwd() / 'img' / 'mp3_icon.png',
+    'mp4_icon_path':Path.cwd() / 'img' / 'mp4_icon.png',
+    'download_icon_path':Path.cwd() / 'img' / 'download.png',
+    'my_icon_path':Path.cwd() / 'img'/ 'profile.jpg'
+}
 
 class Ui():
     def __init__(self, main_frame):
         self.main_frame = main_frame
-        ctk.FontManager.load_font(str(font))
+        ctk.FontManager.load_font(str(path['font_path']))
         self.header()
         self.content()
-        self.dl = downloader.Downloader()
+        self.dl = Downloader()
     
     def header(self):
-        img = Image.open(imgPTH)
+        img = Image.open(path['logo_path'])
         self.logo = ctk.CTkImage(light_image=img,
                             dark_image=img, size=(40,30))
         
@@ -50,30 +52,35 @@ class Ui():
                                  placeholder_text='https://www.youtube.com/watch?v=')
         self.url_entry.pack(padx=(0,5))
 
-    def formato(self):
+    def format(self):
         #------------------------
-        # FORMATO
+        # FORMAT
         #-----------------------
-        mp3ico = Image.open(mp3_icon)
+        mp3ico = Image.open(path['mp3_icon_path'])
         self.mp3_ico = ctk.CTkImage(light_image=mp3ico,
                                     dark_image=mp3ico, size=(25,25))
-        mp4ico = Image.open(mp4_icon)
+        mp4ico = Image.open(path['mp4_icon_path'])
         self.mp4_ico = ctk.CTkImage(light_image=mp4ico,
                                     dark_image=mp4ico, size=(25,25))
         
-        self.formato_frame = ctk.CTkFrame(self.content_frame, fg_color='transparent')
-        self.formato_frame.pack(padx=(10,5),pady=(10,10), fill='x')
+        self.format_frame = ctk.CTkFrame(self.content_frame, fg_color='transparent')
+        self.format_frame.pack(padx=(10,5),pady=(10,10), fill='x')
 
-        self.formato_label = ctk.CTkLabel(self.formato_frame, text='Formato', font=('Super Wonder',20))
-        self.formato_label.pack()
+        self.format_label = ctk.CTkLabel(self.format_frame, text='Formato', font=('Super Wonder',20))
+        self.format_label.pack()
 
-        self.mp3_btn = ctk.CTkButton(self.formato_frame, image=self.mp3_ico ,text='Audio\nMP3', width=120,fg_color='transparent',
-                                     border_width=1, border_spacing=0,border_color='blue', hover_color='gray',command=self.mp3_pressed)
+        self.mp3_btn = ctk.CTkButton(self.format_frame, image=self.mp3_ico,
+                                     text='Audio\nMP3', width=120,fg_color='transparent',
+                                     border_width=1, border_spacing=0,
+                                     border_color='blue', hover_color='gray',
+                                     command=lambda:[self.mp3_pressed, self.set_button_status(self.mp3_btn)])
         self.mp3_btn.pack(side='left', padx=(5,5))
 
-        self.mp4_btn = ctk.CTkButton(self.formato_frame, image=self.mp4_ico,text='Video\nMP4',
-                                     fg_color="transparent", width=120,border_spacing=0,border_width=1,
-                                     border_color='red', hover_color='gray',command=self.mp4_pressed)
+        self.mp4_btn = ctk.CTkButton(self.format_frame, image=self.mp4_ico,
+                                     text='Video\nMP4', fg_color="transparent",
+                                     width=120,border_spacing=0, border_width=1,
+                                     border_color='red', hover_color='gray',
+                                     command=lambda:[self.mp4_pressed, self.set_button_status(self.mp4_btn)])
         self.mp4_btn.pack(padx=(5,5))
     
 
@@ -82,7 +89,7 @@ class Ui():
         @wraps(func)
         def wrapper(self):
             size = (50, 50)
-            img = Image.open(my_icon).resize(size).convert("RGBA")
+            img = Image.open(path['my_icon_path']).resize(size).convert("RGBA")
             mask = Image.new("L", size, 0)
             draw = ImageDraw.Draw(mask)
             draw.ellipse((0, 0, size[0], size[1]), fill=255)
@@ -121,23 +128,21 @@ class Ui():
         self.github_label.bind("<Button-1>", open_github)
 
 
-    def guardar(self):
-        self.mostrar_ruta = ctk.StringVar(value=str(ruta))
+    def save_file(self):
+
+        #Use it for update Label Path
+        self.show_path = ctk.StringVar(value=str(path['current_path']))
         
-        #Nota para el futuro, utilizar self.mostrar_ruta.set('nuevo texto') si quiero cambiar texto del label
-        
-        self.guardar_frame = ctk.CTkFrame(self.content_frame, fg_color='transparent', border_width=1)
-        self.guardar_frame.pack(fill='y', pady=(15,15))
+        self.save_frame = ctk.CTkFrame(self.content_frame, fg_color='transparent')
+        self.save_frame.pack(fill='y', pady=(15,15))
 
-        self.label_ruta = ctk.CTkLabel(self.guardar_frame, textvariable=self.mostrar_ruta)
-        self.label_ruta.pack()
+        self.entry_path = ctk.CTkEntry(self.save_frame, textvariable=self.show_path, width=300)
+        self.entry_path.pack()
 
-
-
-        self.guardar_btn = ctk.CTkButton(self.guardar_frame, text='Guardar en',
+        self.save_btn = ctk.CTkButton(self.save_frame, text='Guardar en',
                                          border_spacing=0, width=90, fg_color='transparent',
-                                         border_width=1, border_color='gray', command=self.guardar_pressed)
-        self.guardar_btn.pack()
+                                         border_width=1, border_color='gray', command=self.save_pressed)
+        self.save_btn.pack(pady=(5,5))
 
 
     def content(self):
@@ -146,21 +151,30 @@ class Ui():
         #self.content_frame.pack_propagate(False)
 
         self.url()
-        self.formato()
-        self.guardar()
+        self.format()
+        self.save_file()
 
-        download = Image.open(download_icon)
+        download = Image.open(path['download_icon_path'])
         self.download_ico = ctk.CTkImage(light_image=download,
                                          dark_image=download,
                                          size=(25,25))
+        
         self.descargar_btn = ctk.CTkButton(self.content_frame, image=self.download_ico, height=35,
                                            text='Iniciar Descarga', fg_color='transparent', border_width=1,
-                                           border_color='green', hover_color='gray',command=self.descargar_pressed)
+                                           border_color='green', hover_color='gray',command=self.download_pressed)
         self.descargar_btn.pack()
         
         self.show_profile()
 
-    def descargar_pressed(self):
+    def set_button_status(self, pressed):
+        #set buttons fg default
+        self.mp3_btn.configure(fg_color="transparent")
+        self.mp4_btn.configure(fg_color="transparent")
+
+        #if you find another beauty color, chage it
+        pressed.configure(fg_color="#1f6aa5")
+
+    def download_pressed(self):
         self.dl.download_url(self.url_entry.get())
 
     def mp4_pressed(self):
@@ -169,7 +183,10 @@ class Ui():
     def mp3_pressed(self):
         self.dl.set_file_format("mp3")
 
-    def guardar_pressed(self):
+    def save_pressed(self):
         select = ctk.filedialog.Directory(title="Choose download location")
         dl_dir = select.show()
-        self.dl.set_dl_path(dl_dir)
+        path['current_path'] = dl_dir
+        self.entry_path.delete(0, 'end')
+        self.entry_path.insert(0, path['current_path'])
+        self.dl.set_dl_path(self.entry_path.get())

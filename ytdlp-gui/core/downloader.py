@@ -22,9 +22,14 @@ class Downloader:
 
 
     
-    def set_dl_path(self, dl_path):
-        self.options["paths"]["home"] = str(dl_path)
-        self.logger.debug("New path set: %s", str(dl_path))
+    def set_dl_path(self, entry_path):
+        if entry_path =="":
+            entry_path = Path.cwd() / DEFAULT_DOWNLOAD_DIR
+            self.options["paths"]["home"] = str(entry_path)
+            self.logger.debug("New path set: %s", str(entry_path))
+        else:    
+            self.options["paths"]["home"] = str(entry_path)
+            self.logger.debug("New path set: %s", str(entry_path))
 
 
 
