@@ -136,7 +136,7 @@ class Ui():
 
         self.guardar_btn = ctk.CTkButton(self.guardar_frame, text='Guardar en',
                                          border_spacing=0, width=90, fg_color='transparent',
-                                         border_width=1, border_color='gray')
+                                         border_width=1, border_color='gray', command=self.guardar_pressed)
         self.guardar_btn.pack()
 
 
@@ -164,7 +164,12 @@ class Ui():
         self.dl.download_url(self.url_entry.get())
 
     def mp4_pressed(self):
-        self.dl.set_file_type("mp4")
+        self.dl.set_file_format("mp4")
 
     def mp3_pressed(self):
-        self.dl.set_file_type("mp3")
+        self.dl.set_file_format("mp3")
+
+    def guardar_pressed(self):
+        select = ctk.filedialog.Directory(title="Choose download location")
+        dl_dir = select.show()
+        self.dl.set_dl_path(dl_dir)
