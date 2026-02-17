@@ -68,12 +68,12 @@ class Ui():
         self.formato_label.pack()
 
         self.mp3_btn = ctk.CTkButton(self.formato_frame, image=self.mp3_ico ,text='Audio\nMP3', width=120,fg_color='transparent',
-                                     border_width=1, border_spacing=0,border_color='blue', hover_color='gray')
+                                     border_width=1, border_spacing=0,border_color='blue', hover_color='gray',command=self.mp3_pressed)
         self.mp3_btn.pack(side='left', padx=(5,5))
 
         self.mp4_btn = ctk.CTkButton(self.formato_frame, image=self.mp4_ico,text='Video\nMP4',
                                      fg_color="transparent", width=120,border_spacing=0,border_width=1,
-                                     border_color='red', hover_color='gray')
+                                     border_color='red', hover_color='gray',command=self.mp4_pressed)
         self.mp4_btn.pack(padx=(5,5))
     
 
@@ -163,3 +163,8 @@ class Ui():
     def descargar_pressed(self):
         self.dl.download_url(self.url_entry.get())
 
+    def mp4_pressed(self):
+        self.dl.set_file_type("mp4")
+
+    def mp3_pressed(self):
+        self.dl.set_file_type("mp3")

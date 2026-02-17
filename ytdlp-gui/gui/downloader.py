@@ -8,35 +8,42 @@ DEFAULT_DOWNLOAD_DIR = "downloads"
 
 class Downloader:
     def __init__(self):
-        self.selection = DEFAULT_FORMAT
+        self.format = DEFAULT_FORMAT
         self.paths = dict()
 
         self.paths["home"] = str(Path.cwd() / DEFAULT_DOWNLOAD_DIR)
-        self.options = self.get_options()
-        self.ytdl = yt_dlp.YoutubeDL(self.options)
+        self.options = self.make_options()
 
 
 
-    def get_options(self):
+    def make_options(self):
+
+        options = dict()
+
+        options["paths"] = self.paths
     
-        if self.selection == "mp3":
-            return {
-                'paths': self.paths,
-                'acodec': 'mp3',
-                # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
-                'postprocessors': [{  # Extract audio using ffmpeg
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
+        if self.format == "mp3":
+            # based on code from https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#extract-audio
+            options["acodec"] = "mp3"
+            options["postprocessors"]= [
+                {  # Extract audio using ffmpeg
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
                 }]
-            } 
         else:
-            return {
-                'paths': self.paths,
-                'format': "mp4"
-                }
+            options["format"] = "mp4"
+        return options
+
 
     def download_url(self, url):
-        errorcode = self.ytdl.download(url)
-        print("Download failed" if errorcode else "Download successful")
-    
+        with  yt_dlp.YoutubeDL(self.options) as dl:
+            errorcode = dl.download(url)  
+            print("Download failed" if errorcode else "Download successful")
+
+
+    def set_file_type(self,file_format):
+        if file_format != self.format:
+            print("Format changed to: ", file_format)
+            self.format = file_format
+            self.options = self.make_options()
 
