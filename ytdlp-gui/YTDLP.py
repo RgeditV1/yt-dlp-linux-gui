@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from ui import Ui
+from gui.ui import Ui
 
 class YTDLP(ctk.CTk):
     def __init__(self):
