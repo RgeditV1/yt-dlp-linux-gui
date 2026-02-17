@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw
 from functools import wraps
 from core.downloader import Downloader
 
-
+#All Paths come frome here
 path = {
     'current_path':Path.cwd(),
     'logo_path':Path.cwd() / "img" / "yt_logo.png",
@@ -15,7 +15,6 @@ path = {
     'download_icon_path':Path.cwd() / 'img' / 'download.png',
     'my_icon_path':Path.cwd() / 'img'/ 'profile.jpg'
 }
-
 
 class Ui():
     def __init__(self, main_frame):
@@ -70,13 +69,18 @@ class Ui():
         self.format_label = ctk.CTkLabel(self.format_frame, text='Formato', font=('Super Wonder',20))
         self.format_label.pack()
 
-        self.mp3_btn = ctk.CTkButton(self.format_frame, image=self.mp3_ico ,text='Audio\nMP3', width=120,fg_color='transparent',
-                                     border_width=1, border_spacing=0,border_color='blue', hover_color='gray',command=self.mp3_pressed)
+        self.mp3_btn = ctk.CTkButton(self.format_frame, image=self.mp3_ico,
+                                     text='Audio\nMP3', width=120,fg_color='transparent',
+                                     border_width=1, border_spacing=0,
+                                     border_color='blue', hover_color='gray',
+                                     command=lambda:[self.mp3_pressed, self.set_button_status(self.mp3_btn)])
         self.mp3_btn.pack(side='left', padx=(5,5))
 
-        self.mp4_btn = ctk.CTkButton(self.format_frame, image=self.mp4_ico,text='Video\nMP4',
-                                     fg_color="transparent", width=120,border_spacing=0,border_width=1,
-                                     border_color='red', hover_color='gray',command=self.mp4_pressed)
+        self.mp4_btn = ctk.CTkButton(self.format_frame, image=self.mp4_ico,
+                                     text='Video\nMP4', fg_color="transparent",
+                                     width=120,border_spacing=0, border_width=1,
+                                     border_color='red', hover_color='gray',
+                                     command=lambda:[self.mp4_pressed, self.set_button_status(self.mp4_btn)])
         self.mp4_btn.pack(padx=(5,5))
     
 
@@ -125,22 +129,20 @@ class Ui():
 
 
     def save_file(self):
+
+        #Use it for update Label Path
         self.show_path = ctk.StringVar(value=str(path['current_path']))
         
-        #Nota para el futuro, utilizar self.mostrar_ruta.set('nuevo texto') si quiero cambiar texto del label
-        
-        self.save_frame = ctk.CTkFrame(self.content_frame, fg_color='transparent', border_width=1)
+        self.save_frame = ctk.CTkFrame(self.content_frame, fg_color='transparent')
         self.save_frame.pack(fill='y', pady=(15,15))
 
-        self.label_path = ctk.CTkLabel(self.save_frame, textvariable=self.show_path)
-        self.label_path.pack()
-
-
+        self.entry_path = ctk.CTkEntry(self.save_frame, textvariable=self.show_path, width=300)
+        self.entry_path.pack()
 
         self.save_btn = ctk.CTkButton(self.save_frame, text='Guardar en',
                                          border_spacing=0, width=90, fg_color='transparent',
                                          border_width=1, border_color='gray', command=self.save_pressed)
-        self.save_btn.pack()
+        self.save_btn.pack(pady=(5,5))
 
 
     def content(self):
@@ -164,6 +166,14 @@ class Ui():
         
         self.show_profile()
 
+    def set_button_status(self, pressed):
+        #set buttons fg default
+        self.mp3_btn.configure(fg_color="transparent")
+        self.mp4_btn.configure(fg_color="transparent")
+
+        #if you find another beauty color, chage it
+        pressed.configure(fg_color="#1f6aa5")
+
     def download_pressed(self):
         self.dl.download_url(self.url_entry.get())
 
@@ -176,4 +186,7 @@ class Ui():
     def save_pressed(self):
         select = ctk.filedialog.Directory(title="Choose download location")
         dl_dir = select.show()
-        self.dl.set_dl_path(dl_dir)
+        path['current_path'] = dl_dir
+        self.entry_path.delete(0, 'end')
+        self.entry_path.insert(0, path['current_path'])
+        self.dl.set_dl_path(self.entry_path.get())
