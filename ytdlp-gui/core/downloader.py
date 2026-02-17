@@ -4,7 +4,6 @@ import logging
 
 
 DEFAULT_FORMAT = "mp4"
-DEFAULT_DOWNLOAD_DIR = "downloads"
 LOG_LEVEL = logging.DEBUG
 
 
@@ -15,17 +14,16 @@ class Downloader:
         logging.basicConfig(level=LOG_LEVEL)
         self.logger = logging.getLogger(__name__)
 
-        self.options["paths"] = {"home": str(Path.cwd() / DEFAULT_DOWNLOAD_DIR)}
+        self.options["paths"] = {"home": str(Path.cwd())}
         self.set_file_format(DEFAULT_FORMAT)
         self.logger.debug("Downloader initialized")
 
     
     def set_dl_path(self, entry_path):
         if entry_path =="":
-            entry_path = Path.cwd() / DEFAULT_DOWNLOAD_DIR
-            self.options["paths"]["home"] = str(entry_path)
-            self.logger.debug("New path set: %s", str(entry_path))
-        else:    
+            entry_path = Path.cwd()
+        
+        if str(entry_path) != self.options["paths"]["home"]:
             self.options["paths"]["home"] = str(entry_path)
             self.logger.debug("New path set: %s", str(entry_path))
 

@@ -22,7 +22,8 @@ class Ui():
         ctk.FontManager.load_font(str(path['font_path']))
         self.header()
         self.content()
-        self.dl = Downloader(path['current_path'])
+        self.dl = Downloader()
+        self.set_button_status(self.mp4_btn)
     
     def header(self):
         img = Image.open(path['logo_path'])
@@ -174,19 +175,42 @@ class Ui():
         #if you find another beauty color, chage it
         pressed.configure(fg_color="#1f6aa5")
 
-    def download_pressed(self):
-        url = self.url_entry.get()
-        if len(url) ==0:
-            print("invalid url")
-            
-            self.url_entry.configure(require_redraw=True, border_color="red")
 
-        else:
-            self.url_entry.configure(require_redraw=True, border_color="grey")
-            
-            error_msg = self.dl.download_url(url)
-            if error_msg != "":
+    @staticmethod
+    def validate_fields(func):
+        @wraps(func)
+        def wrapper(self,*args):
+            url = self.url_entry.get()
+            path['current_path'] = self.entry_path.get()
+            valid = True
+            if Path(path['current_path']).is_dir():
+                self.entry_path.configure(require_redraw=True, border_color="grey")
+                self.dl.set_dl_path(path['current_path'])
+            else:
+                self.entry_path.configure(require_redraw=True, border_color="red")
+                valid = False
+
+            if len(url) ==0:
+                # Makes the border red if the url is incorrect
+                # Feel free to change it
                 self.url_entry.configure(require_redraw=True, border_color="red")
+                valid = False
+            else:
+                self.url_entry.configure(require_redraw=True, border_color="grey")
+
+            if not valid:
+                return
+            return func(self,url)
+        return wrapper
+
+
+    @validate_fields
+    def download_pressed(self,url):
+        
+        if self.dl.download_url(url) != "":
+            self.url_entry.configure(require_redraw=True, border_color="red")
+        
+        
 
 
 
@@ -198,8 +222,9 @@ class Ui():
 
     def save_pressed(self):
         select = ctk.filedialog.Directory(title="Choose download location")
-        dl_dir = select.show()
-        path['current_path'] = dl_dir
+        path['current_path'] = select.show() 
         self.entry_path.delete(0, 'end')
         self.entry_path.insert(0, path['current_path'])
-        self.dl.set_dl_path(self.entry_path.get())
+        self.dl.set_dl_path(path['current_path'])
+
+
