@@ -1,48 +1,109 @@
-# yt-dlp Linux GUI
+# YTDLP UI Edition
 
-A simple, clean and beginner-friendly graphical interface for yt-dlp.
+A modern graphical interface for downloading YouTube videos and audio using **yt-dlp** and **CustomTkinter**.
 
-This project aims to provide a cross-platform GUI that allows users to download videos without needing to use the terminal.
+Built in Python with a modular architecture and currently in a **stable phase**.
 
 ---
 
-## Preview
+## 📌 Project Status
 
-![App Screenshot](./preview.png)
+**Stable**
 
-> Replace the image path with your actual screenshot file.
+The application currently:
+
+- Downloads videos in **MP4** format  
+- Downloads audio in **MP3** format  
+- Allows custom download directory selection  
+- Sends system notifications  
+- Handles resource paths correctly in development  
+
+---
+
+##  Project Structure
+```bash
+ytdlp_gui/
+│
+├── core/
+│   └── downloader.py
+│
+├── gui/
+│   ├── ui.py
+│   └── utils.py
+│
+├── img/
+├── fonts/
+│
+└── YTDLP.py
+```
+- **core/** → Download logic (yt-dlp integration)  
+- **gui/** → Graphical interface and utilities  
+- **img / fonts/** → Static resources used by the UI  
+
+---
+
+## Installation (Recommended)
+
+Instead of installing dependencies manually, simply run:
+
+chmod +x setup.sh  
+./setup.sh  
+
+The setup script will automatically install all required dependencies and prepare the project.
+
+---
+
+## ▶Running the Application
+
+After running the setup script:
+
+python ytdlp_gui/YTDLP.py  
 
 ---
 
 ## Features
 
-- Simple and intuitive interface
-- Download videos using yt-dlp
-- No command-line required
-- Designed to become cross-platform (Linux, Windows, macOS)
-- Open-source and community-driven
+- Modern dark-mode UI (CustomTkinter)  
+- MP3 extraction using FFmpeg  
+- Automatic download directory creation  
+- Input validation before download  
+- System notifications for download status  
+- Clean separation between UI and core logic  
 
 ---
 
-## Project Status
+## How It Works
 
-This project is in an early development stage.
-
-Core functionality is being implemented and the architecture may change as the project evolves.
-
-Contributions are welcome.
+- The `Downloader` class dynamically configures yt-dlp options.
+- Audio mode uses FFmpeg post-processing.
+- The UI validates fields before starting downloads.
+- A smart `resource_path()` function ensures proper asset loading.
 
 ---
 
-## Installation
+## Main Dependencies
 
-### Requirements
+- yt-dlp  
+- customtkinter  
+- pillow  
+- plyer  
 
-- Python 3.10+
-- yt-dlp installed on your system
+(All installed automatically via `setup.sh`.)
 
-Clone the repository:
+---
 
-```bash
-git clone https://github.com/RgeditV1/yt-dlp-linux-gui.git
-cd yt-dlp-linux-gui
+##  Future Improvements
+
+- Real-time download progress bar  
+- Playlist support  
+- Persistent configuration  
+- Additional format options  
+
+---
+
+## 👤 Author
+
+Developed by **RgeditV1**
+and **RowanDavitt**
+
+---

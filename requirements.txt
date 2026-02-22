@@ -1,5 +1,4 @@
 customtkinter==5.2.2
-darkdetect==0.8.0
-packaging==26.0
-pillow==12.1.1
-yt-dlp==2026.2.4
+Pillow==12.1.1
+plyer==2.1.0
+yt_dlp==2026.2.21

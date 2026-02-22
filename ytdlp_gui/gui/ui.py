@@ -3,23 +3,26 @@ import webbrowser
 from pathlib import Path
 from PIL import Image, ImageDraw
 from functools import wraps
-from core.downloader import Downloader
+from ytdlp_gui.core.downloader import Downloader
+from plyer import notification
+from ytdlp_gui.gui.utils import resource_path
 
 
 
 class Ui:
     def __init__(self, main_frame):
         self.main_frame = main_frame
-        my_downloads = Path.home().joinpath('Downloads').resolve()
+        BASE_DIR = resource_path("")
+
         self._paths = {
-            "download_dir": Path(my_downloads).joinpath("yt-dlp-downloads"),
+            "download_dir": Path.home() / "Downloads" / "yt-dlp-downloads",
             "entry_path": Path(),
-            "logo": Path.cwd().joinpath("img","yt_logo.png"),
-            "font": Path.cwd().joinpath("fonts","Super Wonder.ttf"),
-            "mp3_icon": Path.cwd().joinpath("img","mp3_icon.png"),
-            "mp4_icon": Path.cwd().joinpath("img","mp4_icon.png"),
-            "download_icon": Path.cwd().joinpath("img","download.png"),
-            "my_icon": Path.cwd().joinpath("img","profile.jpg"),
+            "logo": BASE_DIR / "img" / "yt_logo.png",
+            "font": BASE_DIR / "fonts" / "Super Wonder.ttf",
+            "mp3_icon": BASE_DIR / "img" / "mp3_icon.png",
+            "mp4_icon": BASE_DIR / "img" / "mp4_icon.png",
+            "download_icon": BASE_DIR / "img" / "download.png",
+            "my_icon": BASE_DIR / "img" / "profile.jpg",
         }
 
         if not self._paths["download_dir"].exists():
@@ -43,6 +46,15 @@ class Ui:
     def set_path(self, key, value):
         self._paths[key] = value
 
+#Notification Area
+    def notify(self,msg):
+        notification.notify(
+            title='Status',
+            message=msg,
+            app_name="YTDLP UI EDITION",
+            timeout=5,
+            toast=True
+        ) # type: ignore
                 
     def header(self):
         img = Image.open(str(self.get_path_list('logo')))
@@ -198,9 +210,9 @@ class Ui:
     @staticmethod
     def validate_fields(func):
         @wraps(func)
-        def wrapper(self,*args):
+        def wrapper(self):
             url = self.url_entry.get()
-            self.set_path('entry_path', self.entry_path.get())
+            self.set_path('entry_path', Path(self.entry_path.get()))
             valid = True
             if Path(self.get_path_list('entry_path')).exists():
                 self.entry_path.configure(require_redraw=True, border_color="green")
@@ -209,9 +221,8 @@ class Ui:
                 self.entry_path.configure(require_redraw=True, border_color="red")
                 valid = False
 
-            if len(url) ==0:
-                # Makes the border red if the url is incorrect
-                # Feel free to change it
+            if len(url) == 0:
+                self.notify('Please use a valid url')
                 self.url_entry.configure(require_redraw=True, border_color="red")
                 valid = False
             else:
@@ -225,9 +236,8 @@ class Ui:
 
     @validate_fields
     def download_pressed(self,url):
-        
         if self.dl.download_url(url) != "":
-            self.url_entry.configure(require_redraw=True, border_color="red")
+            self.url_entry.configure(require_redraw=True, border_color="green")
         
 
     def mp4_pressed(self):
