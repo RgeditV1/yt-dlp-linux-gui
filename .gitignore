@@ -3,3 +3,4 @@ __pycache__
 downloads/*
 *.spec
 *.egg-info/
+build/*
