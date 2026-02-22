@@ -25,8 +25,8 @@ build_exe_options = {
         ("ytdlp_gui/img", "img"),       # Carpeta de imágenes
         ("ytdlp_gui/fonts", "fonts"),   # Carpeta de fuentes
         "README.md",
-        "LICENSE",
-        "preview.png"
+        "yt-dlp-gui.desktop",
+        "LICENSE"
     ],
     "excludes": []
 }

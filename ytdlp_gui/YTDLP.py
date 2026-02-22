@@ -9,7 +9,7 @@ class YTDLP(ctk.CTk):
         self.title("YTDLP UI EDITION")
         self.geometry('400x500')
         self.resizable(False, False)
-        icon_path = resource_path("img/icon.jpg")
+        icon_path = resource_path("img/icon.png")
         icon_image = ImageTk.PhotoImage(Image.open(icon_path))
         self.iconphoto(True, icon_image) # type: ignore
         ctk.set_appearance_mode('dark')
