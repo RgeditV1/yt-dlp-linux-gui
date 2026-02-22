@@ -1,47 +1,69 @@
 from cx_Freeze import setup, Executable
+import sys
 import platform
+from pathlib import Path
 
-# Detectar sistema operativo para elegir base correcto
-if platform.system() == "Windows":
-    base = "Win32GUI"  # GUI sin consola en Windows
+# =========================
+# Detectar sistema operativo
+# =========================
+system = platform.system()
+
+if system == "Windows":
+    base = "Win32GUI"
+    icon_path = "ytdlp_gui/img/icon.ico"
 else:
-    base = "gui"       # GUI multiplataforma en Linux/macOS
+    base = None  # En Linux no se necesita base especial
+    icon_path = "ytdlp_gui/img/icon.png"
 
+# =========================
+# Archivos adicionales
+# =========================
+include_files = [
+    ("ytdlp_gui/img", "img"),
+    ("ytdlp_gui/fonts", "fonts"),
+    "README.md",
+    "LICENSE",
+]
+
+# Solo incluir desktop file en Linux
+if system != "Windows":
+    include_files.append("yt-dlp-gui.desktop")
+
+# =========================
 # Opciones de build
+# =========================
 build_exe_options = {
     "packages": [
-        "os",
-        "sys",
-        "logging",
-        "webbrowser",
-        "pathlib",
-        "functools",
         "customtkinter",
         "PIL",
         "plyer",
         "yt_dlp"
     ],
-    "include_files": [
-        ("ytdlp_gui/img", "img"),       # Carpeta de imágenes
-        ("ytdlp_gui/fonts", "fonts"),   # Carpeta de fuentes
-        "README.md",
-        "yt-dlp-gui.desktop",
-        "LICENSE"
+    "include_files": include_files,
+    "include_msvcr": True,  # IMPORTANTE para Windows
+    "optimize": 1,
+    "excludes": [
+        "tkinter.test",
+        "unittest",
+        "test"
     ],
-    "excludes": []
 }
 
+# =========================
+# Setup
+# =========================
 setup(
     name="YTDLP-GUI-RgeditV1",
-    version="1.0",
+    version="1.0.0",
     description="Graphical interface for yt-dlp with desktop notifications",
     author="RgeditV1",
     options={"build_exe": build_exe_options},
     executables=[
         Executable(
-            "ytdlp_gui/YTDLP.py",       # Script principal
+            "ytdlp_gui/YTDLP.py",
             base=base,
-            icon="ytdlp_gui/img/icon.jpg"  # Ícono de la ventana
+            icon=icon_path,
+            target_name="YTDLP-GUI"
         )
     ]
 )
