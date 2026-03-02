@@ -1,5 +1,4 @@
-customtkinter==5.2.2
+customtkinter==5.3.0
 Pillow==12.1.1
 plyer==2.1.0
 yt_dlp==2026.2.21
-cx_freeze

@@ -4,6 +4,11 @@ A modern graphical interface for downloading YouTube videos and audio using **yt
 
 Built in Python with a modular architecture and currently in a **stable phase**.
 
+## Now You Can Download From AUR
+```bash
+yay -s yt-dlp-gui
+```
+
 ---
 
 ## 📌 Project Status
@@ -45,10 +50,10 @@ ytdlp_gui/
 ## Installation (Recommended)
 
 Instead of installing dependencies manually, simply run:
-
+```bash
 chmod +x setup.sh  
 ./setup.sh  
-
+```
 The setup script will automatically install all required dependencies and prepare the project.
 
 ---
@@ -56,9 +61,9 @@ The setup script will automatically install all required dependencies and prepar
 ## ▶Running the Application
 
 After running the setup script:
-
+```bash
 python ytdlp_gui/YTDLP.py  
-
+```
 ---
 
 ## Features
