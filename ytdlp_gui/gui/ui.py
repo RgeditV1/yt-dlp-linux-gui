@@ -1,5 +1,7 @@
 import customtkinter as ctk
 import webbrowser
+import threading
+from queue import Empty, Queue
 from pathlib import Path
 from PIL import Image, ImageDraw
 from functools import wraps
@@ -31,6 +33,9 @@ class Ui:
         ctk.FontManager.load_font(str(self._paths["font"]))
 
         self.dl = Downloader()
+        self.download_in_progress = False
+        self.download_thread = None
+        self._ui_events = Queue()
 
         self.header()
         self.content()
@@ -101,19 +106,29 @@ class Ui:
         self.format_label = ctk.CTkLabel(self.format_frame, text='Formato', font=('Super Wonder',20))
         self.format_label.pack()
 
-        self.mp3_btn = ctk.CTkButton(self.format_frame, image=self.mp3_ico,
+        self.format_buttons_row = ctk.CTkFrame(self.format_frame, fg_color="transparent")
+        self.format_buttons_row.pack(pady=(0, 4))
+
+        self.mp3_btn = ctk.CTkButton(self.format_buttons_row, image=self.mp3_ico,
                                      text='Audio\nMP3', width=120,fg_color='transparent',
                                      border_width=1, border_spacing=0,
                                      border_color='blue', hover_color='gray',
                                      command=lambda:[self.mp3_pressed(), self.set_button_status(self.mp3_btn)])
         self.mp3_btn.pack(side='left', padx=(5,5))
 
-        self.mp4_btn = ctk.CTkButton(self.format_frame, image=self.mp4_ico,
+        self.mp4_btn = ctk.CTkButton(self.format_buttons_row, image=self.mp4_ico,
                                      text='Video\nMP4', fg_color="transparent",
                                      width=120,border_spacing=0, border_width=1,
                                      border_color='red', hover_color='gray',
                                      command=lambda:[self.mp4_pressed(), self.set_button_status(self.mp4_btn)])
-        self.mp4_btn.pack(padx=(5,5))
+        self.mp4_btn.pack(side='left', padx=(5,5))
+
+        self.jpg_switch = ctk.CTkSwitch(
+            self.format_frame,
+            text="Extraer miniatura JPG",
+            command=self.on_toggle_jpg,
+        )
+        self.jpg_switch.pack(pady=(8, 0), anchor="w", padx=(8, 0))
     
 
     @staticmethod
@@ -194,7 +209,14 @@ class Ui:
         self.descargar_btn = ctk.CTkButton(self.content_frame, image=self.download_ico, height=35,
                                            text='Iniciar Descarga', fg_color='transparent', border_width=1,
                                            border_color='green', hover_color='gray',command=self.download_pressed) # type: ignore
-        self.descargar_btn.pack()
+        self.descargar_btn.pack(pady=(0, 8))
+
+        self.download_progress = ctk.CTkProgressBar(self.content_frame, width=260)
+        self.download_progress.set(0)
+        self.download_progress.pack(pady=(0, 6))
+
+        self.download_status = ctk.CTkLabel(self.content_frame, text="Listo para descargar")
+        self.download_status.pack()
         
         self.show_profile() # type: ignore
 
@@ -236,8 +258,64 @@ class Ui:
 
     @validate_fields
     def download_pressed(self,url):
-        if self.dl.download_url(url) != "":
-            self.url_entry.configure(require_redraw=True, border_color="green")
+        if self.download_in_progress:
+            self.notify("Ya hay una descarga en progreso")
+            return
+
+        self.download_in_progress = True
+        self.descargar_btn.configure(state="disabled")
+        self.download_progress.set(0)
+        self.download_status.configure(text="Iniciando descarga...")
+
+        self.download_thread = threading.Thread(target=self._run_download_worker, args=(url,), daemon=True)
+        self.download_thread.start()
+        self.main_frame.after(100, self._process_ui_events)
+
+    def _run_download_worker(self, url):
+        def on_progress(value):
+            self._ui_events.put(("progress", value))
+
+        def on_status(message):
+            self._ui_events.put(("status", message))
+
+        try:
+            result = self.dl.download_url(url, progress_callback=on_progress, status_callback=on_status)
+            if result != "":
+                self._ui_events.put(("error", result))
+            else:
+                self._ui_events.put(("done", "Completado"))
+        except Exception as err:
+            self._ui_events.put(("error", f"Fallo inesperado en hilo: {err}"))
+
+    def _process_ui_events(self):
+        while True:
+            try:
+                event, payload = self._ui_events.get_nowait()
+            except Empty:
+                break
+
+            if event == "progress":
+                self.download_progress.set(float(payload))
+            elif event == "status":
+                self.download_status.configure(text=str(payload))
+            elif event == "error":
+                self.download_status.configure(text=f"Error: {payload}")
+                self.download_in_progress = False
+                self.descargar_btn.configure(state="normal")
+            elif event == "done":
+                self.download_progress.set(1)
+                self.download_status.configure(text=str(payload))
+                self.download_in_progress = False
+                self.descargar_btn.configure(state="normal")
+
+        if self.download_in_progress:
+            if self.download_thread is not None and not self.download_thread.is_alive() and self._ui_events.empty():
+                self.download_status.configure(text="Error inesperado: hilo finalizado sin respuesta")
+                self.download_in_progress = False
+                self.descargar_btn.configure(state="normal")
+                self.download_thread = None
+                return
+            self.main_frame.after(100, self._process_ui_events)
         
 
     def mp4_pressed(self):
@@ -245,6 +323,14 @@ class Ui:
 
     def mp3_pressed(self):
         self.dl.set_file_format("mp3")
+
+    def on_toggle_jpg(self):
+        active = self.jpg_switch.get() == 1
+        self.dl.set_extract_thumbnail(active)
+        if active:
+            self.download_status.configure(text="Se extraera miniatura JPG junto al archivo")
+        else:
+            self.download_status.configure(text="Miniatura JPG desactivada")
 
     def save_pressed(self):
         select = ctk.filedialog.Directory(title="Choose download location")
@@ -264,7 +350,3 @@ class Ui:
         self.entry_path.delete(0, "end")
         self.entry_path.insert(0, final_path)
         self.dl.set_dl_path(final_path)
-
-
-
-
