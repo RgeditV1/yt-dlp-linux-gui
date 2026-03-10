@@ -10,5 +10,8 @@ Estructura esperada:
 - `thirdparty/linux/ffprobe`
 
 Nota:
-- Estos binarios no se versionan en git (por tamanio). Se descargan en CI y se incluyen en el ZIP/Release.
+- Estos binarios no se versionan en git (por tamaño). Se descargan en CI y se incluyen en el ZIP/Release.
 
+Descarga manual (opcional):
+- Linux: `python scripts/fetch_ffmpeg.py --platform linux`
+- Windows: `python scripts/fetch_ffmpeg.py --platform windows` (o `python scripts/fetch_ffmpeg_windows.py`)
