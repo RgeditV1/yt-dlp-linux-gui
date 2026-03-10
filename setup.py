@@ -1,12 +1,14 @@
 from cx_Freeze import setup, Executable
-import platform
+import os
 
 # =========================
 # Detectar sistema operativo
 # =========================
-system = platform.system()
+is_windows = os.name == "nt"
 
-if system == "Windows":
+# En Git Bash/MSYS2 `platform.system()` puede devolver "MINGW64_NT-..." o similar.
+# `os.name == "nt"` es el check mas fiable para Windows.
+if is_windows:
     base = "Win32GUI"
     icon_path = "ytdlp_gui/img/icon.ico"
 else:
@@ -24,7 +26,7 @@ include_files = [
 ]
 
 # Solo incluir desktop file en Linux
-if system != "Windows":
+if not is_windows:
     include_files.append("yt-dlp-gui.desktop")
 
 # =========================
@@ -61,7 +63,7 @@ setup(
             "ytdlp_gui/YTDLP.py",
             base=base,
             icon=icon_path,
-            target_name="YTDLP-GUI"
+            target_name="YTDLP"
         )
     ]
 )

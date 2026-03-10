@@ -56,6 +56,22 @@ chmod +x setup.sh
 ```
 The setup script will automatically install all required dependencies and prepare the project.
 
+### Windows
+
+PowerShell:
+```powershell
+.\setup.ps1
+```
+If PowerShell blocks scripts:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+CMD:
+```bat
+setup.cmd
+```
+
 ---
 
 ## ▶Running the Application
