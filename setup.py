@@ -1,10 +1,12 @@
 from cx_Freeze import setup, Executable
-import os
+import platform
 
 # =========================
 # Detectar sistema operativo
 # =========================
-is_windows = os.name == "nt"
+
+system = platform.system()
+is_windows = system == "nt"
 
 # En Git Bash/MSYS2 `platform.system()` puede devolver "MINGW64_NT-..." o similar.
 # `os.name == "nt"` es el check mas fiable para Windows.
