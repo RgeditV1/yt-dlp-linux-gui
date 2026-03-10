@@ -116,18 +116,25 @@ class Downloader:
             if ffmpeg_location:
                 # Tiered behavior:
                 # - SD/HD/FHD stay capped (never exceed selected height)
-                # - 4K: if 2160 isn't available, pick the highest available <= 2160 (1440/1080/etc)
-                fmt = (
-                    f"bestvideo[height={pixel}][ext=mp4]+bestaudio[ext=m4a]/"
-                    f"bestvideo[height<={pixel}][ext=mp4]+bestaudio[ext=m4a]/"
-                    f"bestvideo[height={pixel}]+bestaudio/"
-                    f"bestvideo[height<={pixel}]+bestaudio/"
-                    f"best[height={pixel}][ext=mp4]/"
-                    f"best[height<={pixel}][ext=mp4]/"
-                    f"best[height={pixel}]/"
-                    f"best[height<={pixel}]/"
-                    f"worst"
-                )
+                # - 4K: download max quality available (may be > 2160p) and then remux to mp4 when possible
+                if file_resolution == "4K(2160p)":
+                    fmt = (
+                        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+                        "bestvideo+bestaudio/"
+                        "best"
+                    )
+                else:
+                    fmt = (
+                        f"bestvideo[height={pixel}][ext=mp4]+bestaudio[ext=m4a]/"
+                        f"bestvideo[height<={pixel}][ext=mp4]+bestaudio[ext=m4a]/"
+                        f"bestvideo[height={pixel}]+bestaudio/"
+                        f"bestvideo[height<={pixel}]+bestaudio/"
+                        f"best[height={pixel}][ext=mp4]/"
+                        f"best[height<={pixel}][ext=mp4]/"
+                        f"best[height={pixel}]/"
+                        f"best[height<={pixel}]/"
+                        f"worst"
+                    )
                 self.options.update({
                     "ffmpeg_location": ffmpeg_location,
                     "format": fmt,
