@@ -6,7 +6,7 @@ Built in Python with a modular architecture and currently in a **stable phase**.
 
 ## Now You Can Download From AUR
 ```bash
-yay -s yt-dlp-gui
+yay -S yt-dlp-linux-gui
 ```
 
 ---
