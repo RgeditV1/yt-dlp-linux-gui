@@ -15,6 +15,10 @@ class Downloader:
         self.video_resolution = DEFAULT_RESOLUTION
         self.options = dict()
 
+        # Enrich output files with metadata and cover art when FFmpeg is available.
+        self.embed_metadata = True
+        self.embed_cover_art = True
+
         self.options["paths"] = {"home": None}
         self.options["outtmpl"] = "%(title)s.%(ext)s" #this not include the id in file name
         self.set_file_format(DEFAULT_FORMAT, DEFAULT_RESOLUTION)
@@ -164,16 +168,32 @@ class Downloader:
             if status_callback:
                 status_callback(msg)
             return msg
-        # For HD+ in Windows builds we want deterministic behavior; require FFmpeg for >= 720p.
-        if self.format == "mp4" and self.video_resolution != "SD(480p)" and not ffmpeg_location:
-            msg = "FFmpeg no detectado: para 720p/1080p/4K se requiere FFmpeg (thirdparty/windows o PATH)."
+        if self.extract_thumbnail and not ffmpeg_location:
+            msg = "FFmpeg no detectado: extracción de miniatura requiere FFmpeg."
             if status_callback:
                 status_callback(msg)
             return msg
+        want_metadata = bool(getattr(self, "embed_metadata", True))
+        want_cover_art = bool(getattr(self, "embed_cover_art", True)) and self.format in ("mp3", "mp4")
+
+        if self.format == "mp4" and not ffmpeg_location:
+            # If the user wants enrichment, we must require FFmpeg even for SD/progressive downloads.
+            if want_metadata or want_cover_art or self.extract_thumbnail:
+                msg = "FFmpeg no detectado: para añadir metadata/caratula se requiere FFmpeg (thirdparty/<platform> o PATH)."
+                if status_callback:
+                    status_callback(msg)
+                return msg
+            # Otherwise, keep the previous deterministic behavior for HD+.
+            if self.video_resolution != "SD(480p)":
+                msg = "FFmpeg no detectado: para 720p/1080p/4K se requiere FFmpeg (thirdparty/windows o PATH)."
+                if status_callback:
+                    status_callback(msg)
+                return msg
 
         options = dict(self.options)
         options["postprocessors"] = list(self.options.get("postprocessors", []))
 
+        # Thumbnail extraction to disk (kept).
         if self.extract_thumbnail:
             options["writethumbnail"] = True
             options["postprocessors"].append(
@@ -182,6 +202,31 @@ class Downloader:
                     "format": "jpg",
                 }
             )
+
+        # Embed metadata and cover art into the resulting media file (requires FFmpeg).
+        if ffmpeg_location:
+            options.setdefault("ffmpeg_location", ffmpeg_location)
+            if want_metadata:
+                options["postprocessors"].append(
+                    {
+                        "key": "FFmpegMetadata",
+                        "add_metadata": True,
+                        "add_chapters": self.format == "mp4",
+                        "add_infojson": False,
+                    }
+                )
+            if want_cover_art:
+                already_have_thumbnail = bool(self.extract_thumbnail)
+                options["postprocessors"].append(
+                    {
+                        "key": "EmbedThumbnail",
+                        "already_have_thumbnail": already_have_thumbnail,
+                    }
+                )
+                # EmbedThumbnail needs thumbnails on disk; if we're not extracting,
+                # enable thumbnail download but let the PP clean them up.
+                if not options.get("writethumbnail", False):
+                    options["writethumbnail"] = True
 
         options["progress_hooks"] = [self._build_progress_hook(progress_callback, status_callback)]
 
