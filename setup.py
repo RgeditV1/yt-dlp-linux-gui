@@ -1,15 +1,22 @@
 from cx_Freeze import setup, Executable
-import sys
+import os
 import platform
-from pathlib import Path
+import sys
 
 # =========================
 # Detectar sistema operativo
 # =========================
-system = platform.system()
 
-if system == "Windows":
-    base = "Win32GUI"
+system = platform.system()
+is_windows = (
+    os.name == "nt"
+    or sys.platform.startswith("win")
+    or system in ("Windows", "nt")
+    or system.startswith(("MSYS", "MINGW", "CYGWIN"))
+)
+
+if is_windows:
+    base = "gui"
     icon_path = "ytdlp_gui/img/icon.ico"
 else:
     base = None  # En Linux no se necesita base especial
@@ -21,12 +28,13 @@ else:
 include_files = [
     ("ytdlp_gui/img", "img"),
     ("ytdlp_gui/fonts", "fonts"),
+    ("thirdparty", "thirdparty"),
     "README.md",
     "LICENSE",
 ]
 
 # Solo incluir desktop file en Linux
-if system != "Windows":
+if not is_windows:
     include_files.append("yt-dlp-gui.desktop")
 
 # =========================
@@ -54,7 +62,7 @@ build_exe_options = {
 # =========================
 setup(
     name="YTDLP-GUI-RgeditV1",
-    version="1.0.0",
+    version="1.0.3",
     description="Graphical interface for yt-dlp with desktop notifications",
     author="RgeditV1",
     options={"build_exe": build_exe_options},
@@ -63,7 +71,7 @@ setup(
             "ytdlp_gui/YTDLP.py",
             base=base,
             icon=icon_path,
-            target_name="YTDLP-GUI"
+            target_name="YTDLP-GUI.exe" if is_windows else "YTDLP-GUI"
         )
     ]
 )

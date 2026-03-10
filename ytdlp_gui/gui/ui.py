@@ -41,6 +41,7 @@ class Ui:
         self.content()
 
         self.set_button_status(self.mp4_btn)
+        self.mp4_pressed()
 
 
     def get_path_list(self, key):
@@ -129,6 +130,15 @@ class Ui:
             command=self.on_toggle_jpg,
         )
         self.jpg_switch.pack(pady=(8, 0), anchor="w", padx=(8, 0))
+
+        self.resolution_selector = ctk.CTkComboBox(self.format_frame, values=['SD(480p)',
+                                                                              'HD(720p)',
+                                                                              'Full HD(1080p)',
+                                                                              '4K(2160p)'],
+                                                                              command=self.on_resolution_change,
+                                                                              state='readonly')
+        self.resolution_selector.pack(pady=(8, 0), anchor="w", padx=(8, 0))
+        self.resolution_selector.set('HD(720p)')
     
 
     @staticmethod
@@ -319,10 +329,17 @@ class Ui:
         
 
     def mp4_pressed(self):
-        self.dl.set_file_format("mp4")
+        self.resolution_selector.configure(state="readonly")
+        resolution = self.resolution_selector.get()
+        self.dl.set_file_format(file_format="mp4", file_resolution=resolution)
 
     def mp3_pressed(self):
+        self.resolution_selector.configure(state="disabled")
         self.dl.set_file_format("mp3")
+
+    def on_resolution_change(self, resolution):
+        if self.dl.format == "mp4":
+            self.dl.set_file_format(file_format="mp4", file_resolution=resolution)
 
     def on_toggle_jpg(self):
         active = self.jpg_switch.get() == 1

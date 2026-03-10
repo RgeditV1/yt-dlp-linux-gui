@@ -1,19 +1,27 @@
 import yt_dlp
 from pathlib import Path
 from plyer import notification
-
+import os
+import shutil
+import sys
 
 DEFAULT_FORMAT = "mp4"
+DEFAULT_RESOLUTION = "HD(720p)"
 
 class Downloader:
     def __init__(self):
         self.format = None
         self.extract_thumbnail = False
+        self.video_resolution = DEFAULT_RESOLUTION
         self.options = dict()
+
+        # Enrich output files with metadata and cover art when FFmpeg is available.
+        self.embed_metadata = True
+        self.embed_cover_art = True
 
         self.options["paths"] = {"home": None}
         self.options["outtmpl"] = "%(title)s.%(ext)s" #this not include the id in file name
-        self.set_file_format(DEFAULT_FORMAT)
+        self.set_file_format(DEFAULT_FORMAT, DEFAULT_RESOLUTION)
 
     
     def set_dl_path(self, entry_path):
@@ -24,48 +32,175 @@ class Downloader:
 
 
 
-    def set_file_format(self, file_format):
-        if file_format != self.format:
-            self.format = file_format
-            self._apply_format_options(file_format)
+    def set_file_format(self, file_format, file_resolution=None):
+        self.format = file_format
+        if file_format == "mp4":
+            self.video_resolution = file_resolution or DEFAULT_RESOLUTION
+        self._apply_format_options(file_format, file_resolution)
 
     def set_extract_thumbnail(self, enabled):
         self.extract_thumbnail = bool(enabled)
 
-    def _apply_format_options(self, file_format):
+    @staticmethod
+    def _app_base_dir():
+        # Frozen build: sys.executable points to the generated exe
+        if getattr(sys, "frozen", False):
+            return Path(sys.executable).resolve().parent
+        # Source: repo root (ytdlp_gui/core/downloader.py -> parents[2])
+        return Path(__file__).resolve().parents[2]
+
+    @classmethod
+    def _thirdparty_bin_dir(cls):
+        base = cls._app_base_dir()
+        thirdparty = base / "thirdparty"
+        if os.name == "nt":
+            return thirdparty / "windows"
+        return thirdparty / "linux"
+
+    @classmethod
+    def _find_ffmpeg_location(cls):
+        """
+        Returns a path that yt-dlp can use as ffmpeg location, or None if not found.
+        Preference order:
+        1) Bundled binaries in `thirdparty/<platform>/`
+        2) System PATH (`shutil.which`)
+        """
+        bin_dir = cls._thirdparty_bin_dir()
+        if os.name == "nt":
+            ffmpeg_bin = bin_dir / "ffmpeg.exe"
+            ffprobe_bin = bin_dir / "ffprobe.exe"
+        else:
+            ffmpeg_bin = bin_dir / "ffmpeg"
+            ffprobe_bin = bin_dir / "ffprobe"
+
+        if ffmpeg_bin.exists():
+            # yt-dlp accepts a directory; this allows finding ffprobe too.
+            if ffprobe_bin.exists():
+                return str(bin_dir)
+            return str(ffmpeg_bin)
+
+        ffmpeg = shutil.which("ffmpeg")
+        if ffmpeg:
+            return ffmpeg
+        return None
+
+    def _apply_format_options(self, file_format, file_resolution):
         # Reset options linked to media processing.
         self.options["writethumbnail"] = False
         self.options["postprocessors"] = []
+        self.options.pop("ffmpeg_location", None)
+        self.options.pop("merge_output_format", None)
 
         if file_format == "mp3":
             # based on code from https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#extract-audio
             self.options["format"] = "bestaudio/best"
+            ffmpeg_location = self._find_ffmpeg_location()
+            if ffmpeg_location:
+                self.options["ffmpeg_location"] = ffmpeg_location
             self.options["postprocessors"] = [
                 {
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "mp3",
                 }
             ]
-            return
+        else:
+            resolution = {
+                "4K(2160p)"     : "2160",
+                "Full HD(1080p)": "1080",
+                "HD(720p)"      : "720",
+                "SD(480p)"      : "480"
+            }
+            pixel = resolution.get(file_resolution, resolution[DEFAULT_RESOLUTION])
+            ffmpeg_location = self._find_ffmpeg_location()
 
-        # Default mp4
-        self.options["format"] = "mp4"
+            if ffmpeg_location:
+                # Tiered behavior:
+                # - SD/HD/FHD stay capped (never exceed selected height)
+                # - 4K: download max quality available (may be > 2160p) and then remux to mp4 when possible
+                if file_resolution == "4K(2160p)":
+                    fmt = (
+                        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+                        "bestvideo+bestaudio/"
+                        "best"
+                    )
+                else:
+                    fmt = (
+                        f"bestvideo[height={pixel}][ext=mp4]+bestaudio[ext=m4a]/"
+                        f"bestvideo[height<={pixel}][ext=mp4]+bestaudio[ext=m4a]/"
+                        f"bestvideo[height={pixel}]+bestaudio/"
+                        f"bestvideo[height<={pixel}]+bestaudio/"
+                        f"best[height={pixel}][ext=mp4]/"
+                        f"best[height<={pixel}][ext=mp4]/"
+                        f"best[height={pixel}]/"
+                        f"best[height<={pixel}]/"
+                        f"worst"
+                    )
+                self.options.update({
+                    "ffmpeg_location": ffmpeg_location,
+                    "format": fmt,
+                    "merge_output_format": "mp4",
+                    "abort_on_unavailable_fragments": True,
+                })
+            else:
+                # No FFmpeg: progressive MP4 only, still capped.
+                self.options.update({
+                    "format": (
+                        f"best[height={pixel}][ext=mp4]/"
+                        f"best[height<={pixel}][ext=mp4]/"
+                        f"worst[ext=mp4]/worst"
+                    )
+                })
 
 
 
     def send_notify(self, message=None):
-        notification.notify(
-                    title='Status',
-                    message=message,
-                    app_name="YTDLP UI EDITION",
-                    timeout=5,
-                    toast=True
-                ) # type: ignore
+        try:
+            notification.notify(
+                        title='Status',
+                        message=message,
+                        app_name="YTDLP UI EDITION",
+                        timeout=5,
+                        toast=True
+                    ) # type: ignore
+        except: pass
 
     def download_url(self, url, progress_callback=None, status_callback=None):
+        # Re-evaluate MP4 options at download time (FFmpeg may appear after packaging).
+        if self.format == "mp4":
+            self._apply_format_options("mp4", self.video_resolution)
+
+        ffmpeg_location = self.options.get("ffmpeg_location") or self._find_ffmpeg_location()
+        if self.format == "mp3" and not ffmpeg_location:
+            msg = "FFmpeg no detectado: MP3 requiere FFmpeg."
+            if status_callback:
+                status_callback(msg)
+            return msg
+        if self.extract_thumbnail and not ffmpeg_location:
+            msg = "FFmpeg no detectado: extracción de miniatura requiere FFmpeg."
+            if status_callback:
+                status_callback(msg)
+            return msg
+        want_metadata = bool(getattr(self, "embed_metadata", True))
+        want_cover_art = bool(getattr(self, "embed_cover_art", True)) and self.format in ("mp3", "mp4")
+
+        if self.format == "mp4" and not ffmpeg_location:
+            # If the user wants enrichment, we must require FFmpeg even for SD/progressive downloads.
+            if want_metadata or want_cover_art or self.extract_thumbnail:
+                msg = "FFmpeg no detectado: para añadir metadata/caratula se requiere FFmpeg (thirdparty/<platform> o PATH)."
+                if status_callback:
+                    status_callback(msg)
+                return msg
+            # Otherwise, keep the previous deterministic behavior for HD+.
+            if self.video_resolution != "SD(480p)":
+                msg = "FFmpeg no detectado: para 720p/1080p/4K se requiere FFmpeg (thirdparty/windows o PATH)."
+                if status_callback:
+                    status_callback(msg)
+                return msg
+
         options = dict(self.options)
         options["postprocessors"] = list(self.options.get("postprocessors", []))
 
+        # Thumbnail extraction to disk (kept).
         if self.extract_thumbnail:
             options["writethumbnail"] = True
             options["postprocessors"].append(
@@ -74,6 +209,31 @@ class Downloader:
                     "format": "jpg",
                 }
             )
+
+        # Embed metadata and cover art into the resulting media file (requires FFmpeg).
+        if ffmpeg_location:
+            options.setdefault("ffmpeg_location", ffmpeg_location)
+            if want_metadata:
+                options["postprocessors"].append(
+                    {
+                        "key": "FFmpegMetadata",
+                        "add_metadata": True,
+                        "add_chapters": self.format == "mp4",
+                        "add_infojson": False,
+                    }
+                )
+            if want_cover_art:
+                already_have_thumbnail = bool(self.extract_thumbnail)
+                options["postprocessors"].append(
+                    {
+                        "key": "EmbedThumbnail",
+                        "already_have_thumbnail": already_have_thumbnail,
+                    }
+                )
+                # EmbedThumbnail needs thumbnails on disk; if we're not extracting,
+                # enable thumbnail download but let the PP clean them up.
+                if not options.get("writethumbnail", False):
+                    options["writethumbnail"] = True
 
         options["progress_hooks"] = [self._build_progress_hook(progress_callback, status_callback)]
 
