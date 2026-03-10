@@ -28,6 +28,7 @@ else:
 include_files = [
     ("ytdlp_gui/img", "img"),
     ("ytdlp_gui/fonts", "fonts"),
+    ("thirdparty", "thirdparty"),
     "README.md",
     "LICENSE",
 ]

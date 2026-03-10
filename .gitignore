@@ -4,3 +4,8 @@ downloads/*
 *.spec
 *.egg-info/
 build/*
+
+# thirdparty binaries are downloaded in CI (do not commit)
+thirdparty/windows/*.exe
+thirdparty/linux/ffmpeg
+thirdparty/linux/ffprobe

@@ -1,0 +1,56 @@
+name: Build Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch FFmpeg (thirdparty)
+        run: |
+          python scripts/fetch_ffmpeg_windows.py
+
+      - name: Build exe (cx_Freeze)
+        run: |
+          python setup.py build
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $exeDir = Get-ChildItem -Path build -Directory | Where-Object { $_.Name -like "exe.*" } | Select-Object -First 1
+          if (-not $exeDir) { throw "Could not find build\\exe.* directory" }
+          $out = "YTDLP-GUI-windows.zip"
+          if (Test-Path $out) { Remove-Item $out -Force }
+          Compress-Archive -Path (Join-Path $exeDir.FullName "*") -DestinationPath $out
+          Write-Host "Built $out from $($exeDir.FullName)"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YTDLP-GUI-windows
+          path: YTDLP-GUI-windows.zip
+
+      - name: Release (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: YTDLP-GUI-windows.zip
+
