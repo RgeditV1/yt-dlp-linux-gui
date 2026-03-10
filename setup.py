@@ -1,7 +1,5 @@
 from cx_Freeze import setup, Executable
-import sys
 import platform
-from pathlib import Path
 
 # =========================
 # Detectar sistema operativo
@@ -54,7 +52,7 @@ build_exe_options = {
 # =========================
 setup(
     name="YTDLP-GUI-RgeditV1",
-    version="1.0.0",
+    version="1.0.3",
     description="Graphical interface for yt-dlp with desktop notifications",
     author="RgeditV1",
     options={"build_exe": build_exe_options},

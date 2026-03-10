@@ -2,8 +2,8 @@ import yt_dlp
 from pathlib import Path
 from plyer import notification
 
-
 DEFAULT_FORMAT = "mp4"
+DEFAULT_RESOLUTION = "HD(720p)"
 
 class Downloader:
     def __init__(self):
@@ -13,7 +13,7 @@ class Downloader:
 
         self.options["paths"] = {"home": None}
         self.options["outtmpl"] = "%(title)s.%(ext)s" #this not include the id in file name
-        self.set_file_format(DEFAULT_FORMAT)
+        self.set_file_format(DEFAULT_FORMAT, DEFAULT_RESOLUTION)
 
     
     def set_dl_path(self, entry_path):
@@ -24,19 +24,17 @@ class Downloader:
 
 
 
-    def set_file_format(self, file_format):
-        if file_format != self.format:
-            self.format = file_format
-            self._apply_format_options(file_format)
+    def set_file_format(self, file_format, file_resolution=None):
+        self.format = file_format
+        self._apply_format_options(file_format, file_resolution)
 
     def set_extract_thumbnail(self, enabled):
         self.extract_thumbnail = bool(enabled)
 
-    def _apply_format_options(self, file_format):
+    def _apply_format_options(self, file_format, file_resolution):
         # Reset options linked to media processing.
         self.options["writethumbnail"] = False
         self.options["postprocessors"] = []
-
         if file_format == "mp3":
             # based on code from https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#extract-audio
             self.options["format"] = "bestaudio/best"
@@ -46,21 +44,35 @@ class Downloader:
                     "preferredcodec": "mp3",
                 }
             ]
-            return
-
-        # Default mp4
-        self.options["format"] = "mp4"
+        else:
+            resolution = {
+                "4K(2160p)"     : "2160",
+                "Full HD(1080p)": "1080",
+                "HD(720p)"      : "720",
+                "SD(480p)"      : "480"
+            }
+            pixel = resolution.get(file_resolution, resolution[DEFAULT_RESOLUTION])
+            self.options.update({
+                'format': f'bestvideo[height<={pixel}][ext=mp4]+bestaudio[ext=m4a]/best[height<={pixel}]',
+                'merge_output_format': 'mp4'
+            })
+            self.options["postprocessors"].append({
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4',
+            })
 
 
 
     def send_notify(self, message=None):
-        notification.notify(
-                    title='Status',
-                    message=message,
-                    app_name="YTDLP UI EDITION",
-                    timeout=5,
-                    toast=True
-                ) # type: ignore
+        try:
+            notification.notify(
+                        title='Status',
+                        message=message,
+                        app_name="YTDLP UI EDITION",
+                        timeout=5,
+                        toast=True
+                    ) # type: ignore
+        except: pass
 
     def download_url(self, url, progress_callback=None, status_callback=None):
         options = dict(self.options)
