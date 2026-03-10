@@ -1,17 +1,22 @@
 from cx_Freeze import setup, Executable
+import os
 import platform
+import sys
 
 # =========================
 # Detectar sistema operativo
 # =========================
 
 system = platform.system()
-is_windows = system == "nt"
+is_windows = (
+    os.name == "nt"
+    or sys.platform.startswith("win")
+    or system in ("Windows", "nt")
+    or system.startswith(("MSYS", "MINGW", "CYGWIN"))
+)
 
-# En Git Bash/MSYS2 `platform.system()` puede devolver "MINGW64_NT-..." o similar.
-# `os.name == "nt"` es el check mas fiable para Windows.
 if is_windows:
-    base = "Win32GUI"
+    base = "gui"
     icon_path = "ytdlp_gui/img/icon.ico"
 else:
     base = None  # En Linux no se necesita base especial
@@ -65,7 +70,7 @@ setup(
             "ytdlp_gui/YTDLP.py",
             base=base,
             icon=icon_path,
-            target_name="YTDLP"
+            target_name="YTDLP-GUI.exe" if is_windows else "YTDLP-GUI"
         )
     ]
 )
