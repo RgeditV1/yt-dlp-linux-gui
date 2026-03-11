@@ -14,12 +14,16 @@ class Downloader:
         self.extract_thumbnail = False
         self.video_resolution = DEFAULT_RESOLUTION
         self.options = dict()
+        self.overwrite = True # overwrite file if exist
+        self.continuedl = False # redownload file 
 
         # Enrich output files with metadata and cover art when FFmpeg is available.
         self.embed_metadata = True
         self.embed_cover_art = True
 
         self.options["paths"] = {"home": None}
+        self.options['overwrites'] = self.overwrite
+        self.options['continuedl'] = self.continuedl
         self.options["outtmpl"] = "%(title)s.%(ext)s" #this not include the id in file name
         self.set_file_format(DEFAULT_FORMAT, DEFAULT_RESOLUTION)
 
